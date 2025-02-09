@@ -156,22 +156,16 @@ class GeomAttention(nn.Module):
         _, S, _, _ = values.shape
         scale = self.scale or 1. / sqrt(E)
 
-        # Compute the dot product attention
         dot_product = torch.einsum("blhe,bshe->bhls", queries, keys)
 
-        # Compute squared norms of queries and keys
         queries_norm2 = torch.sum(queries**2, dim=-1)
         keys_norm2 = torch.sum(keys**2, dim=-1)
-        # Reshape norms for broadcasting
         queries_norm2 = queries_norm2.permute(0, 2, 1).unsqueeze(-1)  # (B, H, L, 1)
         keys_norm2 = keys_norm2.permute(0, 2, 1).unsqueeze(-2)        # (B, H, 1, S)
-        # Compute squared norm of the wedge product
         wedge_norm2 = queries_norm2 * keys_norm2 - dot_product ** 2  # (B, H, L, S)
         wedge_norm2 = F.relu(wedge_norm2)
-        # Compute the wedge norm
         wedge_norm = torch.sqrt(wedge_norm2 + 1e-8)
 
-        # Combined attention score
         scores = (1 - self.alpha) * dot_product + self.alpha * wedge_norm
         scores = scores * scale
 

@@ -1,33 +1,5 @@
-#!/bin/bash
-
-# List of GPUs to use
-GPUS=(3 4 5 6 7)
-MAX_JOBS_PER_GPU=1
-
-# Initialize job counters for each GPU
-declare -A GPU_JOBS
-for gpu in "${GPUS[@]}"; do
-  GPU_JOBS[$gpu]=0
-done
-
-# Function to update job counters
-update_job_counters() {
-  for pid in "${!PID_GPU[@]}"; do
-    if ! kill -0 "$pid" 2>/dev/null; then
-      gpu_id=${PID_GPU[$pid]}
-      unset PID_GPU[$pid]
-      GPU_JOBS[$gpu_id]=$((GPU_JOBS[$gpu_id]-1))
-    fi
-  done
-}
-
 # Replace with your actual model name
 model_name=SimpleBaseline
-
-# Generate and execute the commands
-declare -A PID_GPU
-current_job=0
-total_jobs=0
 
 
 # Collect all parameter combinations
