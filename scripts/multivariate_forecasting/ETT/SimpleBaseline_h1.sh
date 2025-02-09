@@ -29,12 +29,7 @@ declare -A PID_GPU
 current_job=0
 total_jobs=0
 
-# 0   ETTh1   96  bior3.3    1    1  0.006  256  2025  256  256.  0.367652   
-# 1   ETTh1  192  bior3.3    2    1  0.003  256  2025  256  256.  0.423610   
-# 2   ETTh1  336  bior3.3    2    3  0.001  256  2025  256  256.  0.442726   
-# 3   ETTh1  720      db1    2    1  0.001  256  2025  256  256.  0.467943   
 
-# Collect all parameter combinations
 declare -a parameter_combinations
 for pred_len in  336; do
   for e_layers in 1 2; do

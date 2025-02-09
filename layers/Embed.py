@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import math
-
 
 class DataEmbedding_inverted(nn.Module):
     def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):
