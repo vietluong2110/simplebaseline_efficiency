@@ -114,21 +114,35 @@ while ((current_job < total_jobs)) || (( ${#PID_GPU[@]} > 0 )); do
         --l1_weight "$l1_weight"
       )
       
-      # Start the job
-      echo "Starting job $((current_job+1))/$total_jobs on GPU $gpu_id with parameters: pred_len=$pred_len, e_layers=$e_layers, wv=$wv, m=$m, lr=$lr, batch_size=$batch_size, d_model=$d_model, d_ff=$d_ff, alpha=$alpha, l1_weight=$l1_weight"
-      CUDA_VISIBLE_DEVICES=$gpu_id "${cmd_args[@]}" &
-      pid=$!
-      PID_GPU[$pid]=$gpu_id
-      GPU_JOBS[$gpu_id]=$((GPU_JOBS[$gpu_id]+1))
-      current_job=$((current_job+1))
-    else
-      break
-    fi
-  done
-  
-  sleep 1
-done
 
-# Wait for all jobs to finish
-wait
 
+model_name=SimpleBaseline
+python -u run_ca.py \
+  --is_training 1 \
+  --lradj 'TST' \
+  --patience 10 \
+  --train_epochs 20 \
+  --root_path ./dataset/PEMS/ \
+  --data_path PEMS08.npz \
+  --model_id PEMS08 \
+  --model "$model_name" \
+  --data PEMS \
+  --features M \
+  --seq_len 96 \
+  --pred_len 96 \
+  --e_layers 1 \
+  --d_model 256 \
+  --d_ff 512 \
+  --learning_rate 0.001 \
+  --batch_size 16 \
+  --fix_seed 2025 \
+  --use_norm 1 \
+  --wv 'db12' \
+  --m 3 \
+  --enc_in 170 \
+  --dec_in 170 \
+  --c_out 170 \ 
+  --des 'Exp' \ 
+  --itr 3 \
+  --alpha 0.6 \
+  --l1_weight 5e-5
