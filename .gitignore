@@ -1,0 +1,48 @@
+checkpoints
+dataset
+# Ignore Python cache files and directories
+__pycache__/
+*.pyc
+
+*.py[cod]
+*$py.class
+
+# Ignore virtual environment directories
+venv/
+env/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore log files and databases
+*.log
+*.sqlite3
+
+# Ignore Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+*.eggs/
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+*.swp
+
+# Ignore test coverage files
+.coverage
+*.cover
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# Ignore compiled binaries
+*.so
+
+*.csv
+*.xlsx
+*.ipynb
+result*.txt
