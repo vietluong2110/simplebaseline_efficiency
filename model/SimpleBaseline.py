@@ -54,7 +54,6 @@ class Model(nn.Module):
 
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
-        # pdb.set_trace()
         if self.use_norm:
             # Normalization from Non-stationary Transformer
             means = x_enc.mean(1, keepdim=True).detach()
@@ -93,6 +92,5 @@ class Model(nn.Module):
 
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
-        # pdb.set_trace()
         dec_out, attns = self.forecast(x_enc, None, None, None)
         return dec_out, attns  # [B, L, D]

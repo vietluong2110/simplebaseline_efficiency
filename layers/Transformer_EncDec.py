@@ -42,7 +42,6 @@ class EncoderLayer(nn.Module):
             attn_mask=attn_mask,
             tau=tau, delta=delta
         )
-        # pdb.set_trace()
         x = x + self.dropout(new_x)
         y = x = self.norm1(x)
         y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))

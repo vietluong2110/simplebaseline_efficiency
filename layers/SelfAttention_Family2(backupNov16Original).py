@@ -40,8 +40,7 @@ class WaveletEmbedding(nn.Module):
             self.h1 = nn.Parameter(torch.Tensor(self.d_channel, 1, self.kernel_size), requires_grad=requires_grad)
             nn.init.xavier_uniform_(self.h0)
             nn.init.xavier_uniform_(self.h1)
-            # nn.init.kaiming_uniform_(self.h0, mode='fan_in', nonlinearity='relu')
-            # nn.init.kaiming_uniform_(self.h1, mode='fan_in', nonlinearity='relu')
+       
             with torch.no_grad():
                 self.h0.data = self.h0.data / torch.norm(self.h0.data, dim=-1, keepdim=True)
                 self.h1.data = self.h1.data / torch.norm(self.h1.data, dim=-1, keepdim=True)
@@ -58,7 +57,6 @@ class WaveletEmbedding(nn.Module):
         approx_coeffs = x
         coeffs = []
         dilation = 1
-        # pdb.set_trace()
         for _ in range(depth):
             padding = dilation * (kernel_size - 1)
             padding_r = (kernel_size * dilation) // 2
@@ -73,12 +71,10 @@ class WaveletEmbedding(nn.Module):
         return torch.stack(list(reversed(coeffs)), -2)
 
     def swt_reconstruction(self, coeffs, g0, g1, m, kernel_size):
-        # m = coeffs.shape[-2] - 1
         dilation = 2 ** (m - 1)
         approx_coeff = coeffs[:,:,0,:]
         detail_coeffs = coeffs[:,:,1:,:]
         
-        # pdb.set_trace()
         for i in range(m):
             detail_coeff = detail_coeffs[:,:,i,:]
             padding = dilation * (kernel_size - 1)
@@ -124,7 +120,6 @@ class GeomAttentionLayer(nn.Module):
         )
         
     def forward(self, queries, keys, values, attn_mask, tau=None, delta=None):
-        # pdb.set_trace()
         queries = self.swt(queries)
         keys = self.swt(keys)
         values = self.swt(values)
@@ -133,7 +128,6 @@ class GeomAttentionLayer(nn.Module):
         keys = self.key_projection(keys).permute(0,3,2,1)
         values = self.value_projection(values).permute(0,3,2,1)
 
-        # pdb.set_trace()
         out, attn = self.inner_attention(
             queries,
             keys,
@@ -155,7 +149,7 @@ class GeomAttention(nn.Module):
         self.output_attention = output_attention
         self.dropout = nn.Dropout(attention_dropout)
         
-        self.alpha = alpha # nn.Parameter(torch.tensor(0.1)) #1.
+        self.alpha = alpha 
 
     def forward(self, queries, keys, values, attn_mask=None):
         B, L, H, E = queries.shape

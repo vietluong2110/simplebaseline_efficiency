@@ -77,8 +77,8 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                pred = outputs.detach().cpu()#[:,:self.args.test_pred_len,:]
-                true = batch_y.detach().cpu()#[:,:self.args.test_pred_len,:]
+                pred = outputs.detach().cpu()
+                true = batch_y.detach().cpu()
 
                 if self.args.data == 'PEMS':
                     B, T, C = pred.shape
@@ -169,8 +169,6 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                     else:
                         outputs, attn  = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                    # import pdb
-                    # pdb.set_trace()
                     f_dim = -1 if self.args.features == 'MS' else 0                        
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
@@ -220,8 +218,6 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 adjust_learning_rate(model_optim, epoch + 1, self.args)
             else:
                 adjust_learning_rate(model_optim, epoch + 1, self.args, scheduler)
-
-            # get_cka(self.args, setting, self.model, train_loader, self.device, epoch)
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
@@ -275,14 +271,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 outputs = outputs.detach().cpu().numpy()
                 batch_y = batch_y.detach().cpu().numpy()
-                # TROUBLESHOOTING for PEMS Nov 8
-                # if test_data.scale and self.args.inverse:
-                #     shape = outputs.shape
-                #     outputs = test_data.inverse_transform(outputs.squeeze(0)).reshape(shape)
-                #     batch_y = test_data.inverse_transform(batch_y.squeeze(0)).reshape(shape)
 
-                pred = outputs#[:,:self.args.test_pred_len,:]
-                true = batch_y#[:,:self.args.test_pred_len,:]
+                pred = outputs
+                true = batch_y
 
                 preds.append(pred)
                 trues.append(true)
@@ -325,11 +316,6 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         f.write('\n')
         f.write('\n')
         f.close()
-
-        # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
-        # np.save(folder_path + 'pred.npy', preds)
-        # np.save(folder_path + 'true.npy', trues)
-        # # np.save(folder_path + 'attn.npy', torch.stack(attn).detach().cpu().numpy())
 
         return
 
