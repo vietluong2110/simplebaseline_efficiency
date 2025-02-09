@@ -3,6 +3,18 @@
   <!-- <h2><b> Time-LLM </b></h2> -->
   <h2><b> (ICLR'25) A Simple Baseline For Multivariate Time Series Forcasting </b></h2>
 </div>
+<div align="center">
+
+**[<a href="https://openreview.net/pdf?id=7oLshfEIC2">Paper Page</a>]**
+**[<a href="https://iclr.cc/virtual/2024/poster/19347">ICLR Video</a>]**
+
+</div>
+
+# Updates
+
+🚩 **News** (2025.02):
+
+🚩 **News** (2025.03): 
 
 
 ## Introduction
@@ -15,6 +27,7 @@ We present a simple yet effective architecture - **Waveformer** - that combines 
 <p align="center">
 <img src="./figures/overall.png"  alt="" align=center />
 </p>
+
 
 ### Module 1: Tokenization via Stationary Wavelet Transform
 **Motivational/Rationale**: The first module aims to tokenize MTS data by capturing multi-scale temporal patterns and local/global dependencies across variables. A natural solution is the Wavelet transform, which offers multi-scale decomposition with temporal localization. This approach, inspired by recent use in Transformer models (Yao et al., 2022; Zhu & Soricut, 2024), allows for scale-specific processing. By treating each wavelet scale separately, downstream modules gain access to relevant scale-specific information, improving the efficiency and accuracy of forecasting 
@@ -135,10 +148,11 @@ using PyTorch.
 
 ```bibtex
 @article{,
-  title={},
-  author={},
+  title={A Simple Baseline for Multivariate Time Series Forecasting
+},
+  author={Hui Chen, Viet Luong, Lopamudra Mukherjee, Vikas Singh},
   journal={},
-  year={}
+  year={2025}
 }
 ```
 
