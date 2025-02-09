@@ -14,7 +14,7 @@
 
 🚩 **News** (2025.02):
 
-🚩 **News** (2025.03): 
+🚩 **News** (2025.03): JAX version released and HuggingFace 
 
 
 ## Introduction
@@ -31,8 +31,7 @@ We present a simple yet effective architecture - **Waveformer** - that combines 
 
 ### Module 1: Tokenization via Stationary Wavelet Transform
 **Motivational/Rationale**: The first module aims to tokenize MTS data by capturing multi-scale temporal patterns and local/global dependencies across variables. A natural solution is the Wavelet transform, which offers multi-scale decomposition with temporal localization. This approach, inspired by recent use in Transformer models (Yao et al., 2022; Zhu & Soricut, 2024), allows for scale-specific processing. By treating each wavelet scale separately, downstream modules gain access to relevant scale-specific information, improving the efficiency and accuracy of forecasting 
-𝑌
-Y.
+𝑌.
 
 <p align="center">
 <img src="./figures/module_1_1.png"  alt="" align=center />
@@ -94,6 +93,8 @@ bash ./scripts/long_term_forecast/Weather_script/TimeMixer.sh
 bash ./scripts/short_term_forecast/M4/TimeMixer.sh
 bash ./scripts/short_term_forecast/PEMS/TimeMixer.sh
 ```
+
+## Docker
 
 ## Main Results
 We conduct extensive experiments to evaluate the performance and efficiency of Waveformer, covering long-term and short-term forecasting, including 12 real-world benchmarks and 14 baselines.
