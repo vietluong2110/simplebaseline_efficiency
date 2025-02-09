@@ -5,8 +5,8 @@
 </div>
 <div align="center">
 
-**[<a href="https://openreview.net/pdf?id=7oLshfEIC2">Paper Page</a>]**
-**[<a href="https://iclr.cc/virtual/2024/poster/19347">ICLR Video</a>]**
+**[<a href="">Paper Page</a>]**
+**[<a href="">ICLR Video</a>]**
 
 </div>
 
