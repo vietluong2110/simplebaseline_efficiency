@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from layers.Transformer_Encoder import Encoder, EncoderLayer
 from layers.SWTAttention_Family import GeomAttentionLayer, GeomAttention
 from layers.Embed import DataEmbedding_inverted
+from huggingface_hub import PyTorchModelHubMixin
 
 class Model(nn.Module):
     def __init__(self, configs):

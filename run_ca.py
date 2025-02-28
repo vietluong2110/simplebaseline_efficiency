@@ -1,9 +1,9 @@
 import argparse
 import torch
 from experiments.exp_long_term_forecasting_ca import Exp_Long_Term_Forecast
-from experiments.exp_long_term_forecasting_partial import Exp_Long_Term_Forecast_Partial
 import random
 import numpy as np
+from model.SimpleBaseline import Model
 
 if __name__ == '__main__':
 
@@ -12,6 +12,7 @@ if __name__ == '__main__':
     # basic config
     parser.add_argument('--is_training', type=int, required=True, default=1, help='status')
     parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')
+
     parser.add_argument('--model', type=str, required=True, default='SimpleBaseline',
                         help='model name, options: [SimpleBaseline, iWaveformer]')
 
@@ -113,22 +114,19 @@ if __name__ == '__main__':
     print('Args in experiment:')
     print(args)
 
-    if args.exp_name == 'partial_train': # See Figure 8 of our paper, for the detail
-        Exp = Exp_Long_Term_Forecast_Partial
-    else: # MTSF: multivariate time series forecasting
-        Exp = Exp_Long_Term_Forecast
-
+    Exp = Exp_Long_Term_Forecast
 
     if args.is_training:
         for ii in range(args.itr):
             # setting record of experiments
             setting = '{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(
-                args.model_id,
+                args.model_id, 
+                args.data,
                 args.seq_len,
                 args.pred_len,
                 args.d_model,
                 args.d_ff,
-                args.e_layers,
+                args.e_layers,   
                 args.wv,
                 args.kernel_size,
                 args.m,
@@ -154,9 +152,10 @@ if __name__ == '__main__':
 
             torch.cuda.empty_cache()
     else:
+      
         ii = 0
         setting = '{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(
-            args.model_id,
+            args.data,
             args.seq_len,
             args.pred_len,
             args.d_model,

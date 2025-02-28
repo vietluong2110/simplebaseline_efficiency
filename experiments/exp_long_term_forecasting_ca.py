@@ -22,7 +22,18 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         super(Exp_Long_Term_Forecast, self).__init__(args)
 
     def _build_model(self):
-        model = self.model_dict[self.args.model].Model(self.args).float()
+        
+        if self.args.is_training:
+            print(self.args)
+            model = self.model_dict[self.args.model].Model(self.args).float()
+        else:
+            config = {
+                'configs': self.args
+            }
+            model = self.model_dict[self.args.model] \
+                .Model.from_pretrained('vhluong/SimpleTM', **config)
+                                                                
+ 
 
         if self.args.use_multi_gpu and self.args.use_gpu:
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
@@ -219,6 +230,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             else:
                 adjust_learning_rate(model_optim, epoch + 1, self.args, scheduler)
 
+        # print('===Pushing to HuggingFace===')
+        # self.model.push_to_hub(repo_id='vhluong/SimpleTM', commit_message=f"{self.args.data}_{self.args.seq_len}_{self.args.pred_len}")
+        
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
 
@@ -298,7 +312,6 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             preds = test_data.inverse_transform(preds.reshape(-1, C)).reshape(B, T, C)
             trues = test_data.inverse_transform(trues.reshape(-1, C)).reshape(B, T, C)
 
-
         # result save
         folder_path = './checkpoints/' + setting + '/'
         if not os.path.exists(folder_path):
@@ -316,6 +329,8 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         f.write('\n')
         f.write('\n')
         f.close()
+
+        
 
         return
 
