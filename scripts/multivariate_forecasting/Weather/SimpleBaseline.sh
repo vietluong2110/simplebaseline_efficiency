@@ -6,6 +6,7 @@ python -u run_ca.py \
   --patience 3 \
   --root_path ./dataset/weather/ \
   --data_path weather.csv \
+  --model_id Weather \
   --model "$model_name" \
   --data custom \
   --features M \
@@ -34,6 +35,7 @@ python -u run_ca.py \
   --patience 3 \
   --root_path ./dataset/weather/ \
   --data_path weather.csv \
+  --model_id Weather \
   --model "$model_name" \
   --data custom \
   --features M \
@@ -62,6 +64,7 @@ python -u run_ca.py \
   --patience 3 \
   --root_path ./dataset/weather/ \
   --data_path weather.csv \
+  --model_id Weather \
   --model "$model_name" \
   --data custom \
   --features M \
@@ -90,6 +93,7 @@ python -u run_ca.py \
   --patience 3 \
   --root_path ./dataset/weather/ \
   --data_path weather.csv \
+  --model_id Weather \
   --model "$model_name" \
   --data custom \
   --features M \
