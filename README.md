@@ -81,7 +81,8 @@ resolution.
 ## Get Started
 
 1. Install requirements. ```pip install -r requirements.txt```
-2. Download data. You can download the all datasets from [Kaggle Datasets](https://www.kaggle.com/datasets/wentixiaogege/time-series-dataset). **All the datasets are well pre-processed** and can be used easily.
+2. Download data. You can download the datasets from the following repos: [ETT](https://github.com/zhouhaoyi/ETDataset/tree/main), [Traffic, Electricity, Weather](https://github.com/thuml/Autoformer?tab=readme-ov-file), [Solar](https://github.com/laiguokun/LSTNet), and [PEMS](https://github.com/cure-lab/SCINet?tab=readme-ov-file)
+    **All the datasets are well pre-processed** and can be used easily.
 3. Train the model. We provide the experiment scripts of all benchmarks under the folder `./scripts`. You can reproduce the experiment results by:
 
 ```bash
