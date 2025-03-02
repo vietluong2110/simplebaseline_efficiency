@@ -1,13 +1,13 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from layers.Transformer_Encoder import Encoder, EncoderLayer
-from layers.SWTAttention_Family import GeomAttentionLayer, GeomAttention
-from layers.Embed import DataEmbedding_inverted
+from layers.JAX_Transformer_EncDec import JAX_Encoder, JAX_EncoderLayer
+from layers.JAX_SelfAttention_Family import JAX_GeomAttentionLayer, JAX_GeomAttention
+from layers.JAX_Embed import JAX_DataEmbedding_inverted
 
-class Model(nn.Module):
+import pdb
+import jax.numpy as jnp
+from flax import nnx
+
+class Model(nnx.Module):
     def __init__(self, configs):
-        super(Model, self).__init__()
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
         self.output_attention = configs.output_attention
@@ -15,20 +15,21 @@ class Model(nn.Module):
         self.geomattn_dropout = configs.geomattn_dropout
         self.alpha = configs.alpha
         self.kernel_size = configs.kernel_size
-
-        enc_embedding = DataEmbedding_inverted(configs.seq_len, configs.d_model, 
-                                               configs.embed, configs.freq, configs.dropout)
+        # Embedding
+        enc_embedding = JAX_DataEmbedding_inverted(configs.seq_len, configs.d_model, configs.rngs, configs.dropout)
         self.enc_embedding = enc_embedding
 
-        encoder = Encoder(
-            [  
-                EncoderLayer(
-                    GeomAttentionLayer(
-                        GeomAttention(
+        encoder = JAX_Encoder(
+            [  # Wrap the EncoderLayer in a list
+                JAX_EncoderLayer(
+                    JAX_GeomAttentionLayer(
+                        JAX_GeomAttention(
+                            configs.rngs, 
                             False, configs.factor, attention_dropout=configs.dropout, 
                             output_attention=configs.output_attention, alpha=self.alpha
                         ),
                         configs.d_model, 
+                        configs.rngs, 
                         requires_grad=configs.requires_grad, 
                         wv=configs.wv, 
                         m=configs.m, 
@@ -37,24 +38,26 @@ class Model(nn.Module):
                         geomattn_dropout=self.geomattn_dropout
                     ),
                     configs.d_model,
+                    configs.rngs, 
                     configs.d_ff,
                     dropout=configs.dropout,
                     activation=configs.activation,
-                ) for l in range(configs.e_layers) 
+                ) for l in range(configs.e_layers) # the tuned results before Nov 15th only use fixed 1 layer
             ],
-            norm_layer=torch.nn.LayerNorm(configs.d_model)
+            norm_layer=nnx.LayerNorm(configs.d_model, rngs = configs.rngs)
         )
         self.encoder = encoder
 
-        projector = nn.Linear(configs.d_model, self.pred_len, bias=True)
+        projector = nnx.Linear(configs.d_model, self.pred_len, rngs = configs.rngs)
         self.projector = projector
 
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         if self.use_norm:
-            means = x_enc.mean(1, keepdim=True).detach()
+            # Normalization from Non-stationary Transformer
+            means = x_enc.mean(axis = 1, keepdims=True)
             x_enc = x_enc - means
-            stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
+            stdev = jnp.sqrt(jnp.var(x_enc, axis=1, keepdims=True) + 1e-5)
             # x_enc /= stdev
             x_enc = x_enc / stdev
 
@@ -66,25 +69,33 @@ class Model(nn.Module):
         enc_embedding = self.enc_embedding
         encoder = self.encoder
         projector = self.projector
+        # pdb.set_trace()
         # Embedding
         # B L N -> B N E                (B L N -> B L E in the vanilla Transformer)
-        enc_out = enc_embedding(x_enc, x_mark_enc) 
+        enc_out = enc_embedding(x_enc, x_mark_enc) # covariates (e.g timestamp) can be also embedded as tokens
 
 
         # B N E -> B N E                (B L E -> B L E in the vanilla Transformer)
+        # the dimensions of embedded time series has been inverted, and then processed by native attn, layernorm and ffn modules
         enc_out, attns = encoder(enc_out, attn_mask=None)
 
         # B N E -> B N S -> B S N 
-        dec_out = projector(enc_out).permute(0, 2, 1)[:, :, :N] 
+        dec_out = jnp.permute_dims(projector(enc_out), (0, 2, 1))[:, :, :N] # filter the covariates
 
 
         if self.use_norm:
-            dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
-            dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
-
+            # De-Normalization from Non-stationary Transformer
+            dec_out = dec_out * jnp.tile(
+                jnp.expand_dims(stdev[:, 0, :], axis=1), 
+                (1, self.pred_len, 1))
+            dec_out = dec_out + jnp.tile(
+                jnp.expand_dims(means[:, 0, :], axis=1), 
+                (1, self.pred_len, 1)
+            )
         return dec_out, attns
 
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+    def __call__(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+        # pdb.set_trace()
         dec_out, attns = self.forecast(x_enc, None, None, None)
-        return dec_out, attns  # [B, L, D]
+        return dec_out, attns  # [B, L, D]  
