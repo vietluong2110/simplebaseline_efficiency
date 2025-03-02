@@ -1,20 +1,20 @@
 <div align="center">
   <!-- <h1><b> Time-LLM </b></h1> -->
   <!-- <h2><b> Time-LLM </b></h2> -->
-  <h2><b> (ICLR'25) A Simple Baseline For Multivariate Time Series Forcasting </b></h2>
+  <h2><b> (ICLR'25) SimpleTM: A Simple Baseline For Multivariate Time Series Forcasting </b></h2>
 </div>
 <div align="center">
 
-**[<a href="">Paper Page</a>]**
-**[<a href="">ICLR Video</a>]**
+<!-- **[<a href="">Paper Page</a>]** -->
+<!-- **[<a href="">ICLR Video</a>]** -->
 
 </div>
 
-# Updates
+<!-- # Updates
 
 🚩 **News** (2025.02):
 
-🚩 **News** (2025.03): JAX version released and HuggingFace 
+🚩 **News** (2025.03): JAX version released and HuggingFace  -->
 
 
 ## Introduction
@@ -81,17 +81,17 @@ resolution.
 ## Get Started
 
 1. Install requirements. ```pip install -r requirements.txt```
-2. Download data. You can download the all datasets from [Google Driver](https://drive.google.com/u/0/uc?id=1NF7VEefXCmXuWNbnNe858WvQAkJ_7wuP&export=download), [Baidu Driver](https://pan.baidu.com/share/init?surl=r3KhGd0Q9PJIUZdfEYoymg&pwd=i9iy) or [Kaggle Datasets](https://www.kaggle.com/datasets/wentixiaogege/time-series-dataset). **All the datasets are well pre-processed** and can be used easily.
+2. Download data. You can download the all datasets from [Kaggle Datasets](https://www.kaggle.com/datasets/wentixiaogege/time-series-dataset). **All the datasets are well pre-processed** and can be used easily.
 3. Train the model. We provide the experiment scripts of all benchmarks under the folder `./scripts`. You can reproduce the experiment results by:
 
 ```bash
-bash ./scripts/long_term_forecast/ETT_script/TimeMixer_ETTm1.sh
-bash ./scripts/long_term_forecast/ECL_script/TimeMixer.sh
-bash ./scripts/long_term_forecast/Traffic_script/TimeMixer.sh
-bash ./scripts/long_term_forecast/Solar_script/TimeMixer.sh
-bash ./scripts/long_term_forecast/Weather_script/TimeMixer.sh
-bash ./scripts/short_term_forecast/M4/TimeMixer.sh
-bash ./scripts/short_term_forecast/PEMS/TimeMixer.sh
+bash ./scripts/multivariate_forecasting/ETT/SimpleBaseline_h1.sh
+bash ./scripts/multivariate_forecasting/ECL/SimpleBaseline.sh
+bash ./scripts/long_term_forecast/Traffic/SimpleBaseline.sh
+bash ./scripts/long_term_forecast/SolarEnergy/SimpleBaseline.sh
+bash ./scripts/long_term_forecast/Weather/SimpleBaseline.sh
+bash ./scripts/short_term_forecast/M4/SimpleBaseline.sh
+bash ./scripts/short_term_forecast/PEMS/SimpleBaseline.sh
 ```
 
 ## Docker
@@ -103,13 +103,13 @@ We conduct extensive experiments to evaluate the performance and efficiency of W
 ### Long-term Forecasting
 
 <p align="center">
-<img src="./figures/long_term_forecasting.png"  alt="" align=center />
+<img src="./figures/long_term_forecast.png"  alt="" align=center />
 </p>
 
 ### Short-term Forecasting: Multivariate data
 
 <p align="center">
-<img src="./figures/short_term_forecasting.png"  alt="" align=center />
+<img src="./figures/short_term_forecast.png"  alt="" align=center />
 </p>
 
 
@@ -141,17 +141,18 @@ using PyTorch.
 
 
 ## Further Reading
-1, [**A Simple Baseline For Multivariate Time Series Forcasting**](), in *arXiv* 2024.
+1, [**A Simple Baseline For Multivariate Time Series Forcasting**](https://openreview.net/forum?id=oANkBaVci5&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2025%2FConference%2FAuthors%23your-submissions))
 
 **Authors**: Hui Chen*, Viet Luong, Lopamudra Mukherjee, Vikas Singh 
 
 ```bibtex
-@article{,
-  title={A Simple Baseline for Multivariate Time Series Forecasting
-},
-  author={Hui Chen, Viet Luong, Lopamudra Mukherjee, Vikas Singh},
-  journal={},
-  year={2025}
+@inproceedings{
+chen2025a,
+title={A Simple Baseline for Multivariate Time Series Forecasting},
+author={Hui Chen and Viet Luong and Lopamudra Mukherjee and Vikas Singh},
+booktitle={The Thirteenth International Conference on Learning Representations},
+year={2025},
+url={https://openreview.net/forum?id=oANkBaVci5}
 }
 ```
 
@@ -168,3 +169,4 @@ We appreciate the following GitHub repos a lot for their valuable code and effor
 If you have any questions or want to use the code, feel free to contact:
 * Hui Chen (hchen795@wisc.edu)
 * Viet Luong (vhluong@wisc.edu)
+
