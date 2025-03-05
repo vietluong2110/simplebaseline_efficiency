@@ -85,6 +85,6 @@ class Model(nn.Module):
         return dec_out, attns
 
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+    def forward(self, x_enc):
         dec_out, attns = self.forecast(x_enc, None, None, None)
         return dec_out, attns  # [B, L, D]

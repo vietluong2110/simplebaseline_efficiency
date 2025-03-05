@@ -1,6 +1,6 @@
-export CUDA_VISIBLE_DEVICES=6
-model_name=SimpleBaseline
-python -u run_ca.py \
+export CUDA_VISIBLE_DEVICES=7
+model_name=JAX_SimpleBaseline
+python -u jax_run_ca.py \
   --is_training 1 \
   --lradj 'TST' \
   --patience 3 \
@@ -29,7 +29,7 @@ python -u run_ca.py \
   --alpha 0.0 \
   --l1_weight 0.0
 
-python -u run_ca.py \
+python -u jax_run_ca.py \
   --is_training 1 \
   --lradj 'TST' \
   --patience 3 \
@@ -58,7 +58,7 @@ python -u run_ca.py \
   --alpha 0.0 \
   --l1_weight 0.0
 
-python -u run_ca.py \
+python -u jax_run_ca.py \
   --is_training 1 \
   --lradj 'TST' \
   --patience 3 \
@@ -87,7 +87,7 @@ python -u run_ca.py \
   --alpha 0.0 \
   --l1_weight 5e-5
 
-python -u run_ca.py \
+python -u jax_run_ca.py \
   --is_training 1 \
   --lradj 'TST' \
   --patience 3 \

@@ -96,7 +96,8 @@ if __name__ == '__main__':
                                                                            'you can select [partial_start_index, min(enc_in + partial_start_index, N)]')
 
     parser.add_argument('--fix_seed', type=int, default=2023, help='gpu')
-    
+    parser.add_argument('--benchmark', type=bool, default=False)
+
     args = parser.parse_args()
     args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
 
@@ -151,6 +152,30 @@ if __name__ == '__main__':
                 exp.predict(setting, True)
 
             torch.cuda.empty_cache()
+    elif args.benchmark:
+        ii = 0
+        setting = '{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(
+            args.model_id,
+            args.seq_len,
+            args.pred_len,
+            args.d_model,
+            args.d_ff,
+            args.e_layers,
+            args.wv,
+            args.kernel_size,
+            args.m,
+            args.alpha,
+            args.l1_weight, 
+            args.learning_rate,
+            args.lradj,
+            args.batch_size,
+            args.fix_seed,
+            args.use_norm,
+            ii)
+
+        exp = Exp(args)  # set experiments
+        print('>>>>>>>Benchmark : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        exp.benchmark(setting)
     else:
       
         ii = 0

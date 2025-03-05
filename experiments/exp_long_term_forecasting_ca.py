@@ -23,15 +23,15 @@ class Exp_Long_Term_Forecast(Exp_Basic):
 
     def _build_model(self):
         
-        if self.args.is_training:
-            print(self.args)
-            model = self.model_dict[self.args.model].Model(self.args).float()
-        else:
-            config = {
-                'configs': self.args
-            }
-            model = self.model_dict[self.args.model] \
-                .Model.from_pretrained('vhluong/SimpleTM', **config)
+        # if self.args.is_training:
+        print(self.args)
+        model = self.model_dict[self.args.model].Model(self.args).float()
+        # else:
+        #     config = {
+        #         'configs': self.args
+        #     }
+        #     model = self.model_dict[self.args.model] \
+        #         .Model.from_pretrained('vhluong/SimpleTM', **config)
                                                                 
  
 
@@ -385,3 +385,55 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         np.save(folder_path + 'real_prediction.npy', preds)
 
         return
+    
+    def benchmark(self, setting):
+        test_data, test_loader = self._get_data(flag='test')
+
+        preds = []
+        trues = []
+        folder_path = './checkpoints/' + setting + '/'
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        self.model.eval()
+
+        sum_time = 0; 
+        for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+
+            if i == 0: 
+                print("Warm up")
+            t1 = time.time()
+
+
+            batch_x = batch_x
+            batch_y = batch_y
+            
+            if 'PEMS' in self.args.data or 'Solar' in self.args.data or 'glad' in self.args.data:
+                batch_x_mark = None
+                batch_y_mark = None
+            else:
+                batch_x_mark = batch_x_mark
+                batch_y_mark = batch_y_mark
+
+            # decoder input
+            dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :])
+            dec_inp = torch.concatenate((batch_y[:, :self.args.label_len, :], dec_inp), axis=1)
+            # encoder - decoder
+            self.model(batch_x.cuda())
+
+            
+            if i != 0:
+                sum_time += time.time() - t1
+            print(f"eager eval time {i}: {time.time() - t1}")
+            print("~" * 10)
+        print(f"average eager eval time {i}: {sum_time / (len(test_loader) - 1)}")
+        return
+
+    # Returns the result of running `fn()` and the time it took for `fn()` to run,
+    # in seconds. We use CUDA events and synchronization for the most accurate
+    # measurements.
+    def timed(self, fn):
+        start = time.time()
+        result = fn()
+        end = time.time()
+        return result, end - start

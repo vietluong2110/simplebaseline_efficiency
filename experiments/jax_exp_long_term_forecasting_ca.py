@@ -14,13 +14,8 @@ import optax
 import jax.numpy as jnp 
 import jax
 import orbax.checkpoint as ocp
-import torch
 
-
-import pdb
 warnings.filterwarnings('ignore')
-
-
 
 class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
     def __init__(self, args):
@@ -28,8 +23,6 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args)
-        # if self.args.use_multi_gpu and self.args.use_gpu:
-        #     model = nn.DataParallel(model, device_ids=self.args.device_ids)
         return model
 
     def _get_data(self, flag):
@@ -93,27 +86,18 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         path = os.path.join(self.args.checkpoints, setting)
         if not os.path.exists(path):
             os.makedirs(path)
-
-
+            
         train_steps = len(train_loader)
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
 
-        # criterion = self._select_criterion()
-        # scheduler = optax.schedules.cosine_onecycle_schedule(transition_steps=train_steps,
-        #                     peak_value=self.args.learning_rate,
-        #                     pct_start=self.args.pct_start)
-        
-
-        # optimizer = nnx.Optimizer(self.model, optax.chain(
-        #     optax.clip(self.args.learning_rate),
-        #     optax.adamw(learning_rate=scheduler)
-        # ) )
-
-        learning_rate = 0.005
-        momentum = 0.9
-
-        optimizer = nnx.Optimizer(self.model, optax.adamw(learning_rate, momentum))
-
+        total_steps = train_steps * self.args.train_epochs  # total training steps
+        lr_scheduler = optax.schedules.cosine_onecycle_schedule(
+            transition_steps=total_steps,
+            peak_value=self.args.learning_rate,
+            pct_start=self.args.pct_start
+        )
+                
+        optimizer = nnx.Optimizer(self.model, optax.adamw(learning_rate=lr_scheduler))
 
         train_step_jit = jax.jit(train_step, static_argnames=('pred_len', 'l1_weight', 'output_attention', 'data', 'features'))
         time_now = time.time()
@@ -137,7 +121,6 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
                 dec_inp = jnp.zeros_like(batch_y[:, -self.args.pred_len:, :])
                 dec_inp = jnp.concatenate((batch_y[:, :self.args.label_len, :], dec_inp), axis=1)
 
-                # pdb.set_trace()
                 graphdef, state = nnx.split((self.model, optimizer))
                 
                 state, loss = train_step_jit(graphdef, state, self.args.pred_len, self.args.l1_weight, self.args.output_attention, self.args.data, self.args.features
@@ -160,15 +143,10 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             test_loss = self.vali(test_data, test_loader)
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
-            # early_stopping(vali_loss, self.model, path)
-            # if early_stopping.early_stop:
-            #     print("Early stopping")
-            #     break
-
-            # if self.args.lradj != 'TST':
-            #     adjust_learning_rate(model_optim, epoch + 1, self.args)
-            # else:
-            #     adjust_learning_rate(model_optim, epoch + 1, self.args, scheduler)
+            early_stopping(vali_loss, self.model, path)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
 
             # get_cka(self.args, setting, self.model, train_loader, self.device, epoch)
         
@@ -222,15 +200,10 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             outputs = outputs[:, -self.args.pred_len:, f_dim:]
             batch_y = batch_y[:, -self.args.pred_len:, f_dim:]
             outputs = outputs
-            batch_y = batch_y
-            # TROUBLESHOOTING for PEMS Nov 8
-            # if test_data.scale and self.args.inverse:
-            #     shape = outputs.shape
-            #     outputs = test_data.inverse_transform(outputs.squeeze(0)).reshape(shape)
-            #     batch_y = test_data.inverse_transform(batch_y.squeeze(0)).reshape(shape)
+            batch_y = batch_y       
 
-            pred = outputs#[:,:self.args.test_pred_len,:]
-            true = batch_y#[:,:self.args.test_pred_len,:]
+            pred = outputs
+            true = batch_y
 
             preds.append(pred)
             trues.append(true)
@@ -339,7 +312,7 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
 
         flax_apply_jitted = jax.jit(lambda batch_x, batch_x_mark, dec_inp, batch_y_mark: self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark))
 
-
+        sum_time = 0; 
         for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
 
             if i == 0: 
@@ -364,10 +337,12 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
 
             flax_apply_jitted(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-            # _ , eager_time = self.timed(lambda: self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark))
-            # self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+            
+            if i != 0:
+                sum_time += time.time() - t1
             print(f"eager eval time {i}: {time.time() - t1}")
             print("~" * 10)
+        print(f"average eager eval time {i}: {sum_time / (len(test_loader) - 1)}")
         return
 
     # Returns the result of running `fn()` and the time it took for `fn()` to run,

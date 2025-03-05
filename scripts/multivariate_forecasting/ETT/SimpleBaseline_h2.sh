@@ -1,7 +1,7 @@
-export CUDA_VISIBLE_DEVICES=4
-model_name=SimpleBaseline
-python -u run_ca.py \
-  --is_training 1 \
+export CUDA_VISIBLE_DEVICES=7
+model_name=JAX_SimpleBaseline
+python -u jax_run_ca.py \
+  --is_training 0 \
   --lradj TST \
   --patience 3 \
   --root_path ./dataset/ETT-small/ \
@@ -28,9 +28,10 @@ python -u run_ca.py \
   --itr 3 \
   --alpha 0.1 \
   --l1_weight 0.0005 \
+  --benchmark True
 
-python -u run_ca.py \
-  --is_training 1 \
+python -u jax_run_ca.py \
+  --is_training 0 \
   --lradj TST \
   --patience 3 \
   --root_path ./dataset/ETT-small/ \
@@ -57,9 +58,10 @@ python -u run_ca.py \
   --itr 3 \
   --alpha 0.1 \
   --l1_weight 0.005 \
+  --benchmark True
 
-python -u run_ca.py \
-  --is_training 1 \
+python -u jax_run_ca.py \
+  --is_training 0 \
   --lradj TST \
   --patience 3 \
   --root_path ./dataset/ETT-small/ \
@@ -86,9 +88,10 @@ python -u run_ca.py \
   --itr 3 \
   --alpha 0.9 \
   --l1_weight 0.0 \
+  --benchmark True
 
-python -u run_ca.py \
-  --is_training 1 \
+python -u jax_run_ca.py \
+  --is_training 0 \
   --lradj TST \
   --patience 3 \
   --root_path ./dataset/ETT-small/ \
@@ -115,5 +118,6 @@ python -u run_ca.py \
   --itr 3 \
   --alpha 1.0 \
   --l1_weight 5e-05 \
+  --benchmark True
 
 

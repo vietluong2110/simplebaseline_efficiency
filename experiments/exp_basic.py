@@ -2,9 +2,9 @@ import os
 from model import SimpleBaseline
 import torch
 
-# Add this at the beginning of your training script
-import torch._dynamo as dynamo
-dynamo.config.suppress_errors = True
+# # Add this at the beginning of your training script
+# import torch._dynamo as dynamo
+# dynamo.config.suppress_errors = True
 
 import numpy as np
 
