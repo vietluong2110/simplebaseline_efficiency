@@ -4,10 +4,7 @@ import random
 import numpy as np
 import pdb
 from flax import nnx
-import os 
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
-# os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".XX"
-# os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"]="platform"
+
 
 if __name__ == '__main__':
     # fix_seed = 2023

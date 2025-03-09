@@ -62,8 +62,6 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
 
             if self.args.data == 'PEMS':
                 B, T, C = pred.shape
-                pred = pred.numpy()
-                true = true.numpy()
                 pred = vali_data.inverse_transform(pred.reshape(-1, C)).reshape(B, T, C)
                 true = vali_data.inverse_transform(true.reshape(-1, C)).reshape(B, T, C)
                 mae, mse, rmse, mape, mspe = metric(pred, true)
@@ -250,61 +248,58 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         return
 
 
-    # def predict(self, setting, load=False):
-    #     pred_data, pred_loader = self._get_data(flag='pred')
+    def predict(self, setting, load=False):
+        pred_data, pred_loader = self._get_data(flag='pred')
 
-    #     if load:
-    #         path = os.path.join(self.args.checkpoints, setting)
-    #         best_model_path = path + '/' + 'checkpoint.pth'
-    #         self.model.load_state_dict(torch.load(best_model_path))
+        # if load:
+        #     path = os.path.join(self.args.checkpoints, setting)
+        #     best_model_path = path + '/' + 'checkpoint.pth'
+        #     self.model.load_state_dict(torch.load(best_model_path))
 
-    #     preds = []
+        preds = []
 
-    #     self.model.eval()
-    #     with torch.no_grad():
-    #         for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
-    #             batch_x = batch_x.float().to(self.device)
-    #             batch_y = batch_y.float()
-    #             batch_x_mark = batch_x_mark.float().to(self.device)
-    #             batch_y_mark = batch_y_mark.float().to(self.device)
+        self.model.eval()
+        for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
+            batch_x = batch_x
+            batch_y = batch_y
+            batch_x_mark = batch_x_mark
+            batch_y_mark = batch_y_mark
 
-    #             # decoder input
-    #             dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-    #             dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-    #             # encoder - decoder
-    #             if self.args.use_amp:
-    #                     if self.args.output_attention:
-    #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-    #                     else:
-    #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-    #             else:
-    #                 if self.args.output_attention:
-    #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-    #                 else:
-    #                     outputs, _ = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-    #             outputs = outputs.detach().cpu().numpy()
-    #             if pred_data.scale and self.args.inverse:
-    #                 shape = outputs.shape
-    #                 outputs = pred_data.inverse_transform(outputs.squeeze(0)).reshape(shape)
-    #             preds.append(outputs)
+            # decoder input
+            dec_inp = jnp.zeros_like(batch_y[:, -self.args.pred_len:, :])
+            dec_inp = jnp.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1)
+            # encoder - decoder
+            if self.args.use_amp:
+                    if self.args.output_attention:
+                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                    else:
+                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+            else:
+                if self.args.output_attention:
+                    outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                else:
+                    outputs, _ = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+            outputs = outputs
+            if pred_data.scale and self.args.inverse:
+                shape = outputs.shape
+                outputs = pred_data.inverse_transform(outputs.squeeze(0)).reshape(shape)
+            preds.append(outputs)
 
-    #     preds = np.array(preds)
-    #     preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
+        preds = np.array(preds)
+        preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
 
-    #     # result save
-    #     folder_path = './results/' + setting + '/'
-    #     if not os.path.exists(folder_path):
-    #         os.makedirs(folder_path)
+        # result save
+        folder_path = './results/' + setting + '/'
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
-    #     np.save(folder_path + 'real_prediction.npy', preds)
+        np.save(folder_path + 'real_prediction.npy', preds)
 
-    #     return
+        return
     
     def benchmark(self, setting):
         test_data, test_loader = self._get_data(flag='test')
 
-        preds = []
-        trues = []
         folder_path = './checkpoints/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -364,7 +359,7 @@ def loss_fn(model_, batch_y_, pred_len, l1_weight, output_attention, data, featu
     outputs = outputs[:, -pred_len:, f_dim:]
     batch_y_ = batch_y_[:, -pred_len:, f_dim:]
     if data == "PEMS":
-        l1_loss = jnp.mean(jnp.abs(outputs - batch_y_)) + l1_weight * jnp.stack(attn).abs().mean()
+        l1_loss = jnp.mean(jnp.abs(outputs - batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn)))
         return l1_loss
     else:
         mse_loss = jnp.mean(optax.losses.squared_error(outputs, batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn)))

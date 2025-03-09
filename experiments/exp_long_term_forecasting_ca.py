@@ -419,7 +419,8 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :])
             dec_inp = torch.concatenate((batch_y[:, :self.args.label_len, :], dec_inp), axis=1)
             # encoder - decoder
-            self.model(batch_x.cuda())
+            batch_x = batch_x.float().to(self.device)
+            self.model(batch_x)
 
             
             if i != 0:
