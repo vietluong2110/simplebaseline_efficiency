@@ -194,4 +194,4 @@ class JAX_GeomAttention(nnx.Module):
 
         V = jnp.einsum("bhls,bshd->blhd", A, values)
         
-        return (V, scores)
+        return (V, jnp.mean(jnp.abs(scores)))
