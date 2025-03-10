@@ -120,6 +120,7 @@ while ((current_job < total_jobs)) || (( ${#PID_GPU[@]} > 0 )); do
         --patience 3
         --root_path ./dataset/traffic/ \
         --data_path traffic.csv \
+        --model_id Traffic \
         --model "$model_name"
         --data custom
         --features M
