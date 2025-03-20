@@ -45,22 +45,95 @@ class WaveletEmbedding(nn.Module):
             coeffs = self.swt_reconstruction(x, self.h0, self.h1, self.m, self.kernel_size)
         return coeffs
 
+    def upsample_filter_torch(self, h, factor):
+        """
+        Upsample a 1D filter h by inserting (factor - 1) zeros between coefficients.
+        h is a 3D tensor of shape [C_out, C_in, kernel_size].
+        Returns a tensor of shape [C_out, C_in, (kernel_size-1)*factor + 1].
+        """
+        C_out, C_in, kernel_size = h.shape
+        up_kernel_size = (kernel_size - 1) * factor + 1
+        h_upsampled = torch.zeros(C_out, C_in, up_kernel_size, device=h.device, dtype=h.dtype)
+        h_upsampled[..., ::factor] = h
+        return h_upsampled
+
+    def fft_convolve_1d(self, x, filt):
+        """
+        Compute circular convolution of x with filt using FFT.
+        
+        Parameters:
+        x: Tensor of shape [B, C, L] (input signal)
+        filt: Tensor of shape [C, 1, L_f] (filter)
+                Assumes that each channel in x is convolved with its corresponding filter.
+        
+        The convolution is performed circularly (with periodic extension), and the output length is L.
+        
+        Returns:
+        y: Tensor of shape [B, C, L]
+        """
+        B, C, L = x.shape
+        L_f = filt.shape[-1]
+        fft_length = L  # We use L as the FFT length for circular convolution.
+
+        # Compute the FFT of the input signal x along the last dimension.
+        X_fft = torch.fft.rfft(x, n=fft_length)  # Shape: [B, C, fft_length//2 + 1]
+
+        # Compute the FFT of the filter. filt has shape [C, 1, L_f],
+        # so after FFT it has shape [C, 1, fft_length//2 + 1].
+        F_fft = torch.fft.rfft(filt, n=fft_length)  # Shape: [C, 1, fft_length//2 + 1]
+
+        # Since we assume the filter is applied independently per channel,
+        # squeeze the singleton dimension so that F_fft becomes [C, fft_length//2 + 1].
+        F_fft = F_fft.squeeze(1)  # Shape: [C, fft_length//2 + 1]
+
+        # Add a batch dimension for broadcasting (so it becomes [1, C, fft_length//2 + 1]).
+        F_fft = F_fft.unsqueeze(0)
+
+        # Now multiply in the frequency domain.
+        # X_fft has shape [B, C, fft_length//2 + 1] and F_fft is broadcasted to [B, C, fft_length//2 + 1].
+        Y_fft = X_fft * F_fft
+
+        # Compute the inverse FFT to return to the time domain.
+        y = torch.fft.irfft(Y_fft, n=fft_length)  # Shape: [B, C, fft_length]
+
+        return y
+
     def swt_decomposition(self, x, h0, h1, depth, kernel_size):
-        approx_coeffs = x
+        """
+        Compute the SWT decomposition using FFT-based convolution.
+        
+        According to the professor's derivation, the detail coefficients can be computed as:
+        d_n = (h_1 ↑ 2^(n-1)) * x
+        where ↑ denotes upsampling.
+        
+        Parameters:
+        x         : Input signal tensor of shape [batch, channels, length]
+        h0        : Base low-pass filter as a tensor of shape [C, C, kernel_size]
+        h1        : Base high-pass filter as a tensor of shape [C, C, kernel_size]
+        depth     : Number of decomposition levels.
+        kernel_size: Size of the base filters.
+        
+        Returns:
+        A tensor containing the detail coefficients for each level (and final approximation)
+        stacked along a new dimension. Levels are returned in reverse order.
+        """
         coeffs = []
         dilation = 1
-        for _ in range(depth):
-            padding = dilation * (kernel_size - 1)
-            padding_r = (kernel_size * dilation) // 2
-            pad = (padding - padding_r, padding_r)
-            approx_coeffs_pad = F.pad(approx_coeffs, pad, "circular")
-            detail_coeff = F.conv1d(approx_coeffs_pad, h1, dilation=dilation, groups=x.shape[1])
-            approx_coeffs = F.conv1d(approx_coeffs_pad, h0, dilation=dilation, groups=x.shape[1])
+        # For each level, compute detail coefficients using FFT-based convolution.
+        for n in range(1, depth + 1):
+            factor = 2 ** (n - 1)
+            # Upsample the high-pass filter: h1 ↑ 2^(n-1)
+            h1_upsampled = self.upsample_filter_torch(h1, factor)
+            detail_coeff = self.fft_convolve_1d(x, h1_upsampled)
             coeffs.append(detail_coeff)
-            dilation *= 2
-        coeffs.append(approx_coeffs)
-
-        return torch.stack(list(reversed(coeffs)), -2)
+        # For the final approximation, we can compute:
+        factor = 2 ** (depth - 1)
+        h0_upsampled = self.upsample_filter_torch(h0, factor)
+        approx_coeff = self.fft_convolve_1d(x, h0_upsampled)
+        coeffs.append(approx_coeff)
+        
+        # Optionally, reverse the list so that the coarsest scale (approximation) comes first.
+        return torch.stack(coeffs[::-1], dim=-2)
 
     def swt_reconstruction(self, coeffs, g0, g1, m, kernel_size):
         dilation = 2 ** (m - 1)
@@ -69,14 +142,7 @@ class WaveletEmbedding(nn.Module):
         
         for i in range(m):
             detail_coeff = detail_coeffs[:,:,i,:]
-            padding = dilation * (kernel_size - 1)
-            padding_l = (dilation * kernel_size) // 2
-            pad = (padding_l, padding - padding_l)
-            approx_coeff_pad = F.pad(approx_coeff, pad, "circular")
-            detail_coeff_pad = F.pad(detail_coeff, pad, "circular")
-            
-            y = F.conv1d(approx_coeff_pad, g0, groups=approx_coeff.shape[1], dilation=dilation) + \
-                F.conv1d(detail_coeff_pad, g1, groups=detail_coeff.shape[1], dilation=dilation)
+            y = self.fft_convolve_1d(approx_coeff, g0) + self.fft_convolve_1d(detail_coeff, g1)
             approx_coeff = y / 2
             dilation //= 2
             
