@@ -1,7 +1,7 @@
-# export XLA_PYTHON_CLIENT_PREALLOCATE=false
-export XLA_PYTHON_CLIENT_ALLOCATOR=platform
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+# export XLA_PYTHON_CLIENT_ALLOCATOR=platform
 
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=7
 model_name=JAX_SimpleBaseline
 python -u jax_run_ca.py \
   --is_training 1 \
