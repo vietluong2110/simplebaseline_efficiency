@@ -1,4 +1,6 @@
- export CUDA_VISIBLE_DEVICES=7
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+
+export CUDA_VISIBLE_DEVICES=7
 model_name=SimpleBaseline
 python -u run_ca.py \
   --is_training 0 \
