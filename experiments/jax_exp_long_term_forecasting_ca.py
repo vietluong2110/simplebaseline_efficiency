@@ -77,6 +77,7 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
     
 
     def train(self, setting):
+
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
@@ -120,13 +121,13 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
                 dec_inp = jnp.concatenate((batch_y[:, :self.args.label_len, :], dec_inp), axis=1)
 
                 graphdef, state = nnx.split((self.model, optimizer))
-                
+
                 state, loss = train_step_jit(graphdef, state, self.args.pred_len, self.args.l1_weight, self.args.output_attention, self.args.data, self.args.features
                                   , batch_x, batch_x_mark,dec_inp, batch_y_mark, batch_y)
-                
+
                 nnx.update((self.model, optimizer), state)
                 train_loss.append(loss)
-
+                
                 if (i + 1) % 100 == 0:
                     print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
                     speed = (time.time() - time_now) / iter_count
@@ -350,20 +351,19 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         return result, end - start
 
 def loss_fn(model_, batch_y_, pred_len, l1_weight, output_attention, data, features, batch_x, batch_x_mark, dec_inp, batch_y_mark):
-    if output_attention:
-        outputs = model_(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-    else:
-        # pdb.set_trace()
-        outputs, attn  = model_(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+
+    outputs, attn  = model_(batch_x, batch_x_mark, dec_inp, batch_y_mark)
     f_dim = -1 if features == 'MS' else 0                        
     outputs = outputs[:, -pred_len:, f_dim:]
     batch_y_ = batch_y_[:, -pred_len:, f_dim:]
-    if data == "PEMS":
-        l1_loss = jnp.mean(jnp.abs(outputs - batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn)))
-        return l1_loss
-    else:
-        mse_loss = jnp.mean(optax.losses.squared_error(outputs, batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn)))
-        return mse_loss
+    loss = jax.lax.cond(
+        data == "PEMS",
+        lambda _: jnp.mean(jnp.abs(outputs - batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn))),
+        lambda _: jnp.mean(optax.losses.squared_error(outputs, batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn))),
+        operand=None
+    )
+    
+    return loss
     
 def train_step(graphdef, state, pred_len, l1_weight, output_attention, data, features, batch_x, batch_x_mark, dec_inp, batch_y_mark, batch_y):
         model, optimizer = nnx.merge(graphdef, state)

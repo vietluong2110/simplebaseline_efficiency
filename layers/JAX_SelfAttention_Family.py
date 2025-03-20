@@ -100,7 +100,6 @@ class JAX_WaveletEmbedding(nnx.Module):
             
         return approx_coeff
 
-
 class JAX_GeomAttentionLayer(nnx.Module):
     def __init__(self, attention, d_model, rngs: nnx.Rngs,
                  requires_grad=True, wv='db2', m=2, kernel_size=None,
