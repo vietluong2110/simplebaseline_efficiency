@@ -1,9 +1,10 @@
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export XLA_PYTHON_CLIENT_ALLOCATOR=platform
 
 export CUDA_VISIBLE_DEVICES=7
 model_name=JAX_SimpleBaseline
 python -u jax_run_ca.py \
-  --is_training 1 \
+  --is_training 0 \
   --lradj 'TST' \
   --patience 3 \
   --root_path ./dataset/weather/ \
@@ -30,7 +31,7 @@ python -u jax_run_ca.py \
   --itr 3 \
   --alpha 0.3 \
   --l1_weight 5e-05 \
-  # --benchmark True
+  --benchmark True
   
 # python -u jax_run_ca.py \
 #   --is_training 1 \
