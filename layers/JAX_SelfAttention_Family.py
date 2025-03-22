@@ -6,6 +6,7 @@ import jax.numpy as jnp
 import pdb
 import pywt
 from jax import lax
+import jaxwt as jwt
 class JAX_WaveletEmbedding(nnx.Module):
     def __init__(self, d_channel=16, swt=True, requires_grad=False, wv='db2', m=2, kernel_size=None):
         self.swt = swt
@@ -13,92 +14,15 @@ class JAX_WaveletEmbedding(nnx.Module):
         self.m = m  # Number of decomposition levels of detailed coefficients
         if kernel_size is None:
             self.wavelet = pywt.Wavelet(wv)
-            if self.swt:
-                h0 = jnp.array(self.wavelet.dec_lo[::-1], dtype=jnp.float64)
-                h1 = jnp.array(self.wavelet.dec_hi[::-1], dtype=jnp.float64)
-            else:
-                h0 = jnp.array(self.wavelet.rec_lo[::-1], dtype=jnp.float64)
-                h1 = jnp.array(self.wavelet.rec_hi[::-1], dtype=jnp.float64)
-            self.h0 = nnx.Param(jnp.tile(h0[None, None, :], [self.d_channel, 1, 1]))
-            self.h1 = nnx.Param(jnp.tile(h1[None, None, :], [self.d_channel, 1, 1]))
-            self.kernel_size = self.h0.shape[-1]
+            self.wavelet = wv
         
     def __call__(self, x):
         if self.swt:
-            coeffs = self.swt_decomposition(x, self.h0, self.h1, self.m, self.kernel_size)
+            coeffs = jwt.swt(x, self.wavelet, level = self.m)
         else:
-            coeffs = self.swt_reconstruction(x, self.h0, self.h1, self.m, self.kernel_size)
+            coeffs = jwt.iswt(x, self.wavelet)
         return coeffs
 
-    def swt_decomposition(self, x, h0, h1, depth, kernel_size):
-        approx_coeffs = x
-        coeffs = []
-        dilation = 1
-        for _ in range(depth):
-            padding = dilation * (kernel_size - 1)
-            padding_r = (kernel_size * dilation) // 2
-            pad = (padding - padding_r, padding_r)
-            approx_coeffs_pad = jnp.pad(approx_coeffs, ((0, 0), (0, 0), pad), "wrap")
-            # pdb.set_trace()
-            detail_coeff = lax.conv_general_dilated(
-                    lhs=approx_coeffs_pad,
-                    rhs=h1.value,
-                    window_strides=(1,),
-                    padding='VALID',
-                    rhs_dilation=(dilation,),
-                    dimension_numbers=('NCH', 'OIH', 'NCH'),
-                    feature_group_count=x.shape[1]
-                )
-            approx_coeffs = lax.conv_general_dilated(
-                    lhs=approx_coeffs_pad,
-                    rhs=h0.value,
-                    window_strides=(1,),
-                    padding='VALID',
-                    rhs_dilation=(dilation,),
-                    dimension_numbers=('NCH', 'OIH', 'NCH'),
-                    feature_group_count=x.shape[1]
-                )
-            coeffs.append(detail_coeff)
-            dilation *= 2
-        coeffs.append(approx_coeffs)
-        result = jnp.stack(list(reversed(coeffs)), axis=-2)
-        return result
-
-    def swt_reconstruction(self, coeffs, g0, g1, m, kernel_size):
-        # m = coeffs.shape[-2] - 1
-        dilation = 2 ** (m - 1)
-        approx_coeff = coeffs[:,:,0,:]
-        detail_coeffs = coeffs[:,:,1:,:]
-        
-        # pdb.set_trace()
-        for i in range(m):
-            detail_coeff = detail_coeffs[:,:,i,:]
-            padding = dilation * (kernel_size - 1)
-            padding_l = (dilation * kernel_size) // 2
-            pad = (padding_l, padding - padding_l)
-            approx_coeff_pad = jnp.pad(approx_coeff, ((0, 0), (0, 0), pad), "wrap")
-            detail_coeff_pad = jnp.pad(detail_coeff, ((0, 0), (0, 0), pad), "wrap")
-            y = lax.conv_general_dilated(
-                lhs=approx_coeff_pad,
-                rhs=g0.value,
-                window_strides=(1,),
-                padding='VALID',               # Already padded manually
-                rhs_dilation=(dilation,),      # Dilation factor in the kernel
-                dimension_numbers=('NCH','OIH','NCH'),
-                feature_group_count=approx_coeff.shape[1])  + \
-            lax.conv_general_dilated(
-                lhs=detail_coeff_pad,
-                rhs=g1.value,
-                window_strides=(1,),
-                padding='VALID',               # Already padded manually
-                rhs_dilation=(dilation,),      # Dilation factor in the kernel
-                dimension_numbers=('NCH','OIH','NCH'),
-                feature_group_count=detail_coeff.shape[1]
-            )
-            approx_coeff = y / 2
-            dilation //= 2
-            
-        return approx_coeff
 
 class JAX_GeomAttentionLayer(nnx.Module):
     def __init__(self, attention, d_model, rngs: nnx.Rngs,
@@ -145,7 +69,7 @@ class JAX_GeomAttentionLayer(nnx.Module):
         )
         # pdb.set_trace()
         out = self.out_projection(jnp.permute_dims(out, (0,3,2,1)))
-
+        # print(out)
         return out, attn
 
 class JAX_GeomAttention(nnx.Module):

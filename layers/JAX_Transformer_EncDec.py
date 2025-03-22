@@ -40,6 +40,7 @@ class JAX_EncoderLayer(nnx.Module):
             attn_mask=attn_mask,
             tau=tau, delta=delta
         )
+        new_x = jnp.asarray(new_x)
         x = x + self.dropout(new_x)
         y = x = self.norm1(x)
         y = self.dropout(self.activation(self.conv1(y)))
