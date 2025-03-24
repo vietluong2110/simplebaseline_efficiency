@@ -16,10 +16,10 @@ class Exp_Basic(object):
         }
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
-        # # When compiling the model, use these settings:
-        # self.model = torch.compile(
-        #     self.model,
-        # )
+        # When compiling the model, use these settings:
+        self.model = torch.compile(
+             self.model,
+        )
         # Efficiency (Nov 12): # of trainable parameters
         # Count trainable parameters
         model_parameters = filter(lambda p: p.requires_grad, self.model.parameters())
