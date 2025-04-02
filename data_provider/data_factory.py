@@ -17,12 +17,12 @@ data_dict = {
 # We need to stack the batch elements as numpy arrays
 def numpy_collate(batch):
     if isinstance(batch[0], np.ndarray):
-        return np.stack(batch)
+        return np.stack(batch, dtype = np.float32)
     elif isinstance(batch[0], (tuple,list)):
         transposed = zip(*batch)
         return [numpy_collate(samples) for samples in transposed]
     else:
-        return np.array(batch)
+        return np.array(batch, dtype = np.float32)
     
 def data_provider(args, flag):
     Data = data_dict[args.data]

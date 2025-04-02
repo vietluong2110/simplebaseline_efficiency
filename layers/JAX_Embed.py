@@ -8,7 +8,7 @@ class JAX_DataEmbedding_inverted(nnx.Module):
     def __init__(self, c_in, d_model, rngs, dropout = 0.1):
         kernel_init = jax.nn.initializers.variance_scaling(scale = 1, mode = 'fan_in', distribution = 'uniform')
         bias_init = jax.nn.initializers.normal()
-        self.value_embedding = nnx.Linear(in_features = c_in, out_features = d_model, kernel_init=kernel_init, bias_init = bias_init,  rngs = rngs)
+        self.value_embedding = nnx.Linear(in_features = c_in, out_features = d_model, precision = jax.lax.Precision('highest'), kernel_init=kernel_init, bias_init = bias_init,  rngs = rngs)
         self.dropout = nnx.Dropout(dropout, rngs = rngs)
 
     def __call__(self, x, x_mark):

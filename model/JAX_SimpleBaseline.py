@@ -48,7 +48,7 @@ class Model(nnx.Module):
         )
         self.encoder = encoder
 
-        projector = nnx.Linear(configs.d_model, self.pred_len, rngs = configs.rngs)
+        projector = nnx.Linear(configs.d_model, self.pred_len, precision = jax.lax.Precision('highest'), rngs = configs.rngs)
         self.projector = projector
 
 

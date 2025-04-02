@@ -4,7 +4,8 @@ import random
 import numpy as np
 import pdb
 from flax import nnx
-
+import jax
+jax.config.update("jax_default_matmul_precision", "float32")
 
 if __name__ == '__main__':
     # fix_seed = 2023

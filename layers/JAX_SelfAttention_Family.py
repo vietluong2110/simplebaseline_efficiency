@@ -36,20 +36,20 @@ class JAX_GeomAttentionLayer(nnx.Module):
 
         self.swt = JAX_WaveletEmbedding(d_channel=self.d_channel, swt=True, requires_grad=requires_grad, wv=wv, m=m, kernel_size=kernel_size)
         self.query_projection = nnx.Sequential(
-            nnx.Linear(in_features = d_model, out_features = d_model, kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
+            nnx.Linear(in_features = d_model, out_features = d_model, precision = jax.lax.Precision('highest'), kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
             nnx.Dropout(geomattn_dropout, rngs = rngs)
             
         )
         self.key_projection = nnx.Sequential(
-            nnx.Linear(in_features = d_model, out_features = d_model, kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
+            nnx.Linear(in_features = d_model, out_features = d_model, precision = jax.lax.Precision('highest'), kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
             nnx.Dropout(geomattn_dropout, rngs = rngs)
         )
         self.value_projection = nnx.Sequential(
-            nnx.Linear(in_features = d_model, out_features = d_model, kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
+            nnx.Linear(in_features = d_model, out_features = d_model, precision = jax.lax.Precision('highest'), kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
             nnx.Dropout(geomattn_dropout, rngs = rngs)
         )
         self.out_projection = nnx.Sequential(
-            nnx.Linear(in_features = d_model, out_features = d_model, kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
+            nnx.Linear(in_features = d_model, out_features = d_model, precision = jax.lax.Precision('highest'), kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
             JAX_WaveletEmbedding(d_channel=self.d_channel, swt=False, requires_grad=requires_grad, wv=wv, m=m, kernel_size=kernel_size),
         )
         

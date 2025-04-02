@@ -122,8 +122,7 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
                 graphdef, state = nnx.split((self.model, optimizer))
 
                 batch_x = batch_x.astype(np.float32)
-                import pdb
-                pdb.set_trace()
+                
                 state, loss = train_step_jit(graphdef, state, self.args.pred_len, self.args.l1_weight, self.args.output_attention, self.args.data, self.args.features
                                   , batch_x, batch_x_mark,dec_inp, batch_y_mark, batch_y)
 
