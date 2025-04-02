@@ -120,7 +120,8 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
                 dec_inp = jnp.concatenate((batch_y[:, :self.args.label_len, :], dec_inp), axis=1)
 
                 graphdef, state = nnx.split((self.model, optimizer))
-
+           
+                batch_x = batch_x.astype(np.float32)
                 state, loss = train_step_jit(graphdef, state, self.args.pred_len, self.args.l1_weight, self.args.output_attention, self.args.data, self.args.features
                                   , batch_x, batch_x_mark,dec_inp, batch_y_mark, batch_y)
 
@@ -145,23 +146,23 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
-        _, self.state = nnx.split(self.model)
-        self.checkpoint_dir = '/workspace/save_1'
-        checkpoint_manager = ocp.CheckpointManager(
-        ocp.test_utils.erase_and_create_empty(self.checkpoint_dir),
-            options=ocp.CheckpointManagerOptions(
-                max_to_keep=2,
-                keep_checkpoints_without_metrics=False,
-                enable_async_checkpointing=False,
-                create=True,
-            ),
-        )
+        # _, self.state = nnx.split(self.model)
+        # self.checkpoint_dir = '/workspace/save_1'
+        # checkpoint_manager = ocp.CheckpointManager(
+        # ocp.test_utils.erase_and_create_empty(self.checkpoint_dir),
+        #     options=ocp.CheckpointManagerOptions(
+        #         max_to_keep=2,
+        #         keep_checkpoints_without_metrics=False,
+        #         enable_async_checkpointing=False,
+        #         create=True,
+        #     ),
+        # )
 
-        checkpoint_manager.save(
-            1, args=ocp.args.Composite(state=ocp.args.PyTreeSave(self.state))
-        )
-        checkpoint_manager.wait_until_finished()
-        checkpoint_manager.close()
+        # checkpoint_manager.save(
+        #     1, args=ocp.args.Composite(state=ocp.args.PyTreeSave(self.state))
+        # )
+        # checkpoint_manager.wait_until_finished()
+        # checkpoint_manager.close()
         return self.model
 
     def test(self, setting, test=0):
