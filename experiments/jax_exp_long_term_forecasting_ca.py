@@ -81,11 +81,9 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
-
         path = os.path.join(self.args.checkpoints, setting)
-        if not os.path.exists(path):
-            os.makedirs(path)
-        self.ckpt_dir = ocp.test_utils.erase_and_create_empty(path)
+        # if not os.path.exists(path):
+        #     os.makedirs(path)
 
         train_steps = len(train_loader)
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
@@ -147,32 +145,46 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
-        
-        _, state = nnx.split(self.model)
+        _, self.state = nnx.split(self.model)
+        self.checkpoint_dir = '/workspace/save_1'
+        checkpoint_manager = ocp.CheckpointManager(
+        ocp.test_utils.erase_and_create_empty(self.checkpoint_dir),
+            options=ocp.CheckpointManagerOptions(
+                max_to_keep=2,
+                keep_checkpoints_without_metrics=False,
+                enable_async_checkpointing=False,
+                create=True,
+            ),
+        )
 
-        checkpointer = ocp.StandardCheckpointer()
-        checkpointer.save(self.ckpt_dir, state)
-
+        checkpoint_manager.save(
+            1, args=ocp.args.Composite(state=ocp.args.PyTreeSave(self.state))
+        )
+        checkpoint_manager.wait_until_finished()
+        checkpoint_manager.close()
         return self.model
 
     def test(self, setting, test=0):
         test_data, test_loader = self._get_data(flag='test')
-        if test:
-            print('loading model')
-            # Restore the checkpoint back to its `nnx.State` structure - need an abstract reference.
-            checkpointer = ocp.StandardCheckpointer()
-            abstract_model = nnx.eval_shape(lambda: self._build_model())
-            graphdef, abstract_state = nnx.split(abstract_model)
-            print('The abstract NNX state (all leaves are abstract arrays):')
-            nnx.display(abstract_state)
+        # if test:
+        #     print('loading model')
+        #     # Restore the checkpoint back to its `nnx.State` structure - need an abstract reference.
+        #     abstract_model = nnx.eval_shape(lambda: self._build_model())
+        #     graphdef, abstract_state = nnx.split(abstract_model)
 
-            state_restored = checkpointer.restore(self.ckpt_dir, abstract_state)
-            # jax.tree.map(np.testing.assert_array_equal, state, state_restored)
-            print('NNX State restored: ')
-            nnx.display(state_restored)
+        #     # state_restored = checkpointer.restore(self.ckpt_dir /'state', abstract_state)
+        #     with ocp.CheckpointManager(
+        #         self.checkpoint_dir, options=ocp.CheckpointManagerOptions(read_only=True)
+        #     ) as read_mgr:
+        #         restored = read_mgr.restore(
+        #             1,
+        #             # pass in the model_state to restore the exact same State type
+        #             args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=abstract_state))
+        #         )
+        #         read_mgr.wait_until_finished()
 
-            # The model is now good to use!
-            model = nnx.merge(graphdef, state_restored)
+        #     # The model is now good to use!
+        #     model = nnx.merge(graphdef, restored['state'])
 
         preds = []
         trues = []
@@ -199,10 +211,10 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             # encoder - decoder
             
             if self.args.output_attention:
-                outputs = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
             else:
                 
-                outputs, attn = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                outputs, attn = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
             f_dim = -1 if self.args.features == 'MS' else 0
             outputs = outputs[:, -self.args.pred_len:, f_dim:]
