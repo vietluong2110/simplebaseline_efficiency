@@ -103,7 +103,7 @@ python -u jax_run_ca.py \
   --features M \
   --seq_len 96 \
   --pred_len 720 \
-  --e_layers 2 \
+  --e_layers 1 \
   --d_model 32 \
   --d_ff 32 \
   --learning_rate 0.009 \

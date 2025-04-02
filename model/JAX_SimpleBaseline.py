@@ -47,10 +47,9 @@ class Model(nnx.Module):
             norm_layer=nnx.LayerNorm(configs.d_model, rngs = configs.rngs)
         )
         self.encoder = encoder
-        kernel_init = jax.nn.initializers.variance_scaling(scale = 1, mode = 'fan_in', distribution = 'uniform')
-        bias_init = jax.nn.initializers.normal()
-        projector = nnx.Linear(configs.d_model, self.pred_len, precision = jax.lax.Precision('highest'), kernel_init = kernel_init, \
-                                bias_init = bias_init, rngs = configs.rngs)
+        # kernel_init = jax.nn.initializers.variance_scaling(scale = 1, mode = 'fan_in', distribution = 'uniform')
+        # bias_init = jax.nn.initializers.normal()
+        projector = nnx.Linear(configs.d_model, self.pred_len, precision = jax.lax.Precision('highest'), rngs = configs.rngs)
         self.projector = projector
 
 
