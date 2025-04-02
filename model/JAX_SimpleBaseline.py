@@ -5,7 +5,7 @@ from layers.JAX_Embed import JAX_DataEmbedding_inverted
 import pdb
 import jax.numpy as jnp
 from flax import nnx
-
+import jax
 class Model(nnx.Module):
     def __init__(self, configs):
         self.seq_len = configs.seq_len
@@ -58,7 +58,6 @@ class Model(nnx.Module):
             means = x_enc.mean(axis = 1, keepdims=True)
             x_enc = x_enc - means
             stdev = jnp.sqrt(jnp.var(x_enc, axis=1, keepdims=True) + 1e-5)
-            # x_enc /= stdev
             x_enc = x_enc / stdev
 
         _, _, N = x_enc.shape # B L N

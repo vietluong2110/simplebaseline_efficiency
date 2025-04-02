@@ -49,3 +49,6 @@ result*.txt
 
 model.safetensors
 figures.zip
+
+jax/*
+checkpoints_jax/*

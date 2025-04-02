@@ -1,7 +1,6 @@
-export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export XLA_PYTHON_CLIENT_ALLOCATOR=platform
-
-export CUDA_VISIBLE_DEVICES=7
+export JAX_ENABLE_X64=True
+export CUDA_VISIBLE_DEVICES=4
 model_name=JAX_SimpleBaseline
 # python -u jax_run_ca.py \
 #   --is_training 1 \

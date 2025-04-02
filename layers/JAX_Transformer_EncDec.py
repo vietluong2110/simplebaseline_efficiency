@@ -25,10 +25,10 @@ class JAX_EncoderLayer(nnx.Module):
         self.attention = attention
         kernel_init = jax.nn.initializers.variance_scaling(scale = 1, mode = 'fan_in', distribution = 'uniform')
         bias_init = jax.nn.initializers.normal()
-        self.conv1 = nnx.Conv(in_features=d_model, out_features=d_ff, kernel_size=(1, )
-                              , kernel_init = kernel_init, bias_init = bias_init, rngs = rngs)
+        self.conv1 = nnx.Conv(in_features=d_model, out_features=d_ff, kernel_size=(1, ),
+                               kernel_init = kernel_init, bias_init = bias_init, rngs = rngs)
         self.conv2 = nnx.Conv(in_features=d_ff, out_features=d_model, kernel_size=(1, ),
-                              kernel_init = kernel_init, bias_init = bias_init, rngs = rngs)
+                                kernel_init = kernel_init, bias_init = bias_init, rngs = rngs)
         self.norm1 = nnx.LayerNorm(d_model, rngs = rngs)
         self.norm2 = nnx.LayerNorm(d_model, rngs = rngs)
         self.dropout = nnx.Dropout(dropout, rngs = rngs)

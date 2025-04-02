@@ -85,7 +85,8 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         path = os.path.join(self.args.checkpoints, setting)
         if not os.path.exists(path):
             os.makedirs(path)
-            
+        self.ckpt_dir = ocp.test_utils.erase_and_create_empty(path)
+
         train_steps = len(train_loader)
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
 
@@ -146,28 +147,36 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
-
-            # get_cka(self.args, setting, self.model, train_loader, self.device, epoch)
         
-        # _, state = nnx.split(self.model)
+        _, state = nnx.split(self.model)
 
-        # pdb.set_trace()
-        # ckpt_dir = ocp.test_utils.erase_and_create_empty(path)
-        
-        # checkpointer = ocp.StandardCheckpointer()
-        # checkpointer.save(ckpt_dir / 'pure_dict', state)
+        checkpointer = ocp.StandardCheckpointer()
+        checkpointer.save(self.ckpt_dir, state)
 
         return self.model
 
     def test(self, setting, test=0):
         test_data, test_loader = self._get_data(flag='test')
-        # if test:
-        #     print('loading model')
-        #     self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
+        if test:
+            print('loading model')
+            # Restore the checkpoint back to its `nnx.State` structure - need an abstract reference.
+            checkpointer = ocp.StandardCheckpointer()
+            abstract_model = nnx.eval_shape(lambda: self._build_model())
+            graphdef, abstract_state = nnx.split(abstract_model)
+            print('The abstract NNX state (all leaves are abstract arrays):')
+            nnx.display(abstract_state)
+
+            state_restored = checkpointer.restore(self.ckpt_dir, abstract_state)
+            # jax.tree.map(np.testing.assert_array_equal, state, state_restored)
+            print('NNX State restored: ')
+            nnx.display(state_restored)
+
+            # The model is now good to use!
+            model = nnx.merge(graphdef, state_restored)
 
         preds = []
         trues = []
-        folder_path = './checkpoints/' + setting + '/'
+        folder_path = './checkpoints/' + setting + '/' 
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -190,10 +199,10 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             # encoder - decoder
             
             if self.args.output_attention:
-                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                outputs = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
             else:
                 
-                outputs, attn = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                outputs, attn = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
             f_dim = -1 if self.args.features == 'MS' else 0
             outputs = outputs[:, -self.args.pred_len:, f_dim:]

@@ -48,14 +48,12 @@ class JAX_GeomAttentionLayer(nnx.Module):
             nnx.Linear(in_features = d_model, out_features = d_model, kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
             nnx.Dropout(geomattn_dropout, rngs = rngs)
         )
-        print(kernel_size)
         self.out_projection = nnx.Sequential(
             nnx.Linear(in_features = d_model, out_features = d_model, kernel_init = kernel_init, bias_init = bias_init, rngs = rngs),
             JAX_WaveletEmbedding(d_channel=self.d_channel, swt=False, requires_grad=requires_grad, wv=wv, m=m, kernel_size=kernel_size),
         )
         
     def __call__(self, queries, keys, values, attn_mask, tau=None, delta=None):
-        # pdb.set_trace()
         queries = self.swt(queries)
         keys = self.swt(keys)
         values = self.swt(values)
@@ -67,9 +65,7 @@ class JAX_GeomAttentionLayer(nnx.Module):
             keys,
             values,
         )
-        # pdb.set_trace()
         out = self.out_projection(jnp.permute_dims(out, (0,3,2,1)))
-        # print(out)
         return out, attn
 
 class JAX_GeomAttention(nnx.Module):
