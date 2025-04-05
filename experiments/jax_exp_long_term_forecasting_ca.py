@@ -32,6 +32,7 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
     def vali(self, vali_data, vali_loader):
         total_loss = []
         self.model.eval()
+        infer_jit = jax.jit(lambda batch_x: self.model(batch_x))
         for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(vali_loader):
             batch_x = batch_x
             batch_y = batch_y
@@ -47,10 +48,10 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
             dec_inp = jnp.zeros_like(batch_y[:, -self.args.pred_len:, :])
             dec_inp = jnp.concatenate((batch_y[:, :self.args.label_len, :], dec_inp), axis=1)
             
-            if self.args.output_attention:
-                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-            else:
-                outputs, _ = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+            # if self.args.output_attention:
+            #     outputs = infer_jit(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+            # else:
+            outputs, _ = infer_jit(batch_x)
             
             f_dim = -1 if self.args.features == 'MS' else 0
 
@@ -96,9 +97,9 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         )
                 
         optimizer = nnx.Optimizer(self.model, optax.adamw(learning_rate=lr_scheduler))
-
-        train_step_jit = jax.jit(train_step, static_argnames=('pred_len', 'l1_weight', 'output_attention', 'data', 'features'))
         time_now = time.time()
+
+        train_step_jit = jax.jit(train_step, static_argnames=('pred_len', 'l1_weight'))
         for epoch in range(self.args.train_epochs):
             iter_count = 0
             train_loss = []
@@ -121,15 +122,13 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
 
                 graphdef, state = nnx.split((self.model, optimizer))
 
-                batch_x = batch_x.astype(np.float32)
-
-                state, loss = train_step_jit(graphdef, state, self.args.pred_len, self.args.l1_weight, self.args.output_attention, self.args.data, self.args.features
-                                  , batch_x, batch_x_mark,dec_inp, batch_y_mark, batch_y)
-
+                state, loss = train_step_jit(graphdef, state, self.args.pred_len, self.args.l1_weight,
+                                   batch_x, batch_y)
+                
                 nnx.update((self.model, optimizer), state)
                 train_loss.append(loss)
                 
-                if (i + 1) % 100 == 0:
+                if (i + 1) % 30 == 0:
                     print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
@@ -216,7 +215,7 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
             else:
                 
-                outputs, attn = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                outputs, attn = self.model(batch_x)
 
             f_dim = -1 if self.args.features == 'MS' else 0
             outputs = outputs[:, -self.args.pred_len:, f_dim:]
@@ -373,24 +372,24 @@ class JAX_Exp_Long_Term_Forecast(JAX_Exp_Basic):
         end = time.time()
         return result, end - start
 
-def loss_fn(model_, batch_y_, pred_len, l1_weight, output_attention, data, features, batch_x, batch_x_mark, dec_inp, batch_y_mark):
 
-    outputs, attn  = model_(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-    f_dim = -1 if features == 'MS' else 0                        
-    outputs = outputs[:, -pred_len:, f_dim:]
-    batch_y_ = batch_y_[:, -pred_len:, f_dim:]
-    loss = jax.lax.cond(
-        data == "PEMS",
-        lambda _: jnp.mean(jnp.abs(outputs - batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn))),
-        lambda _: jnp.mean(optax.losses.squared_error(outputs, batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn))),
-        operand=None
-    )
     
-    return loss
-    
-def train_step(graphdef, state, pred_len, l1_weight, output_attention, data, features, batch_x, batch_x_mark, dec_inp, batch_y_mark, batch_y):
+def train_step(graphdef, state, pred_len, l1_weight, batch_x, batch_y):
+        def loss_fn(model_, batch_y_, pred_len, l1_weight, batch_x):
+            outputs, attn  = model_(batch_x)
+            f_dim = 0                   
+            outputs = outputs[:, -pred_len:, f_dim:]
+            batch_y_ = batch_y_[:, -pred_len:, f_dim:]
+            # loss = jax.lax.cond(
+            #     data == "PEMS",
+            #     lambda _: jnp.mean(jnp.abs(outputs - batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn))),
+            #     lambda _: ,
+            #     operand=None
+            # )
+            loss = jnp.mean(optax.losses.squared_error(outputs, batch_y_)) + l1_weight * jnp.mean(jnp.abs(jnp.stack(attn)))
+            return loss
         model, optimizer = nnx.merge(graphdef, state)
-        loss, grads = nnx.value_and_grad(loss_fn)(model, batch_y, pred_len, l1_weight, output_attention, data, features, batch_x, batch_x_mark, dec_inp, batch_y_mark)
+        loss, grads = nnx.value_and_grad(loss_fn)(model, batch_y, pred_len, l1_weight, batch_x)
         optimizer.update(grads)
         _, state = nnx.split((model, optimizer))
         return state, loss 

@@ -1,5 +1,5 @@
 export XLA_PYTHON_CLIENT_ALLOCATOR=platform
-export JAX_ENABLE_X64=True
+# export JAX_ENABLE_X64=True
 export CUDA_VISIBLE_DEVICES=4
 model_name=JAX_SimpleBaseline
 # python -u jax_run_ca.py \

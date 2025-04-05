@@ -49,7 +49,7 @@ class Model(nnx.Module):
         self.encoder = encoder
         # kernel_init = jax.nn.initializers.variance_scaling(scale = 1, mode = 'fan_in', distribution = 'uniform')
         # bias_init = jax.nn.initializers.normal()
-        projector = nnx.Linear(configs.d_model, self.pred_len, precision = jax.lax.Precision('highest'), rngs = configs.rngs)
+        projector = nnx.Linear(configs.d_model, self.pred_len, rngs = configs.rngs)
         self.projector = projector
 
 
@@ -95,7 +95,7 @@ class Model(nnx.Module):
         return dec_out, attns
 
 
-    def __call__(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+    def __call__(self, x_enc, mask=None):
         # pdb.set_trace()
         dec_out, attns = self.forecast(x_enc, None, None, None)
         return dec_out, attns  # [B, L, D]  
